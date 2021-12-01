@@ -42,6 +42,13 @@ public class RubyController : MonoBehaviour
     AudioSource audiosource1;
     [SerializeField]
     AudioSource audiosource2;
+    [SerializeField]
+    AudioSource audiosource3;
+    [SerializeField]
+    AudioSource audiosource4;
+    [SerializeField]
+    private bool _isspeedActive;
+
     public int FixedRobots;
     public Text FixedText;
     private int ammo = 4;
@@ -52,6 +59,7 @@ public class RubyController : MonoBehaviour
         currentHealth = maxHealth;
         audioSource = GetComponent<AudioSource>();
         _restartLevelText.gameObject.SetActive(false);
+        _isspeedActive = false;
     }
     void Update()
     {
@@ -62,10 +70,14 @@ public class RubyController : MonoBehaviour
                 ammo--;
                 UpdateAmmo();
             }
-        
-        if (Input.GetKeyDown(KeyCode.R) && _isGameOver == true)
+            if (Input.GetKeyDown(KeyCode.C) && ammo == 0)
         {
-            SceneManager.GetActiveScene();
+            audiosource3.Play();
+        }
+
+            if (Input.GetKeyDown(KeyCode.R) && _isGameOver == true)
+        {
+            SceneManager.LoadScene(0);
         }
         if (isInvincible)
         {
@@ -101,6 +113,15 @@ public class RubyController : MonoBehaviour
         {
             Application.Quit();
         }
+        if (_isspeedActive == true)
+        {
+            speed = 7;
+        }
+        if (currentHealth == 0)
+        {
+            speed = 0;
+        }
+
     }
 
     void FixedUpdate()
@@ -114,6 +135,7 @@ public class RubyController : MonoBehaviour
 
     public void ChangeHealth(int amount)
     {
+
         if (amount < 0)
         {
             if (isInvincible)
@@ -131,25 +153,50 @@ public class RubyController : MonoBehaviour
         currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
 
         UIHealthBar.instance.SetValue(currentHealth / (float)maxHealth);
+        if (currentHealth <= 1)
+        {
+            audiosource4.Play();
+        }
+        if (currentHealth >= 2)
+        {
+            audiosource4.Stop();
+        }
         if (health <= 0)
         {
             _isGameOver = true;
             GameOverSequence();
         }
+
+    }
+    public void ChangeSpeed ()
+    {
+        speed = 2;
+        StartCoroutine(SpeedNormal());
+        IEnumerator SpeedNormal()
+        {
+            yield return new WaitForSeconds(1.0f);
+            speed = 4;
+        }
     }
 
     void Launch()
     {
-        GameObject projectileObject = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f, Quaternion.identity);
+        if (ammo > 0)
+        {
+            GameObject projectileObject = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f, Quaternion.identity);
 
-        Projectile projectile = projectileObject.GetComponent<Projectile>();
-        projectile.Launch(lookDirection, 300);
+            Projectile projectile = projectileObject.GetComponent<Projectile>();
+            projectile.Launch(lookDirection, 300);
 
-        animator.SetTrigger("Launch");
+            animator.SetTrigger("Launch");
 
-        PlaySound(throwSound);
+            PlaySound(throwSound);
+        }
+        else
+        {
+            audiosource3.Play();
+        }
     }
-
     public void PlaySound(AudioClip clip)
     {
         audioSource.PlayOneShot(clip);
@@ -162,6 +209,7 @@ public class RubyController : MonoBehaviour
         {
             loseText.gameObject.SetActive(true);
             audiosource2.Play();
+            speed = 0;
         }
         else
         {
@@ -207,6 +255,19 @@ public class RubyController : MonoBehaviour
     {
         ammo = ammo + 4;
         UpdateAmmo();
+    }
+    public void SpeedActive()
+    {
+        _isspeedActive = true;
+        speed = 7;
+        StartCoroutine(SpeedPowerDownRoutine());
+
+        IEnumerator SpeedPowerDownRoutine()
+        {
+            yield return new WaitForSeconds(5.0f);
+            _isspeedActive = false;
+            speed = 4;
+        }
     }
 }
 
